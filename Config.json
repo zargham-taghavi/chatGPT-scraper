@@ -1,0 +1,14 @@
+{
+    "chat_gpt_user" : "dhurghamalbahbahanee@gmail.com",
+    "chat_gpt_pass" : "rZ-8Dc4!#bz%YEr",
+    "search_keywords": "python developer",    
+    "browser_hide": false,
+    "time_out":20,
+    "sleep_time":1,
+    "mysql_host" : "127.0.0.1",
+    "mysql_user" : "root",
+    "mysql_pass" : "",
+    "DataBase_name" : "python_scrap",
+    "table_name" : "linkedin"
+    
+}
