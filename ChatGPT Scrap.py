@@ -49,8 +49,7 @@ email = 'z.taghawi@gmail.com'
 global BrowserTitleToFind
 BrowserTitleToFind = 'Zargham09355124619'
 
-URL = "https://chat.openai.com/"
-# print(URL)
+URL = ""
 
 OutPut_Filename = root_path/'results.xlsx'
 workbook = Workbook()
@@ -63,6 +62,43 @@ sheet.column_dimensions['B'].width=35
 
 workbook.save(OutPut_Filename)
 
+def chat_openai():
+    global URL
+    URL = "https://chat.openai.com/"
+    my_chrome_options = webdriver.ChromeOptions()
+    my_chrome_options.add_argument('--ignore-certificate-errors')
+    my_chrome_options.add_argument('--ignore-ssl-errors')
+    my_chrome_options.add_argument('--start-maximized')
+    if BrowserHide:
+        my_chrome_options.add_argument('--headless')
+
+    # chromedriver_path = "C:/Users/zargham/.cache/selenium/chromedriver/win32/109.0.5414.74/chromedriver.exe"
+    browser_driver = webdriver.Chrome(options=my_chrome_options)
+
+    browser_driver.get(URL)
+    time.sleep(20)
+    sign_in_url = browser_driver.find_elements(
+        By.CSS_SELECTOR, 'button.btn.relative.btn-primary:nth-child(1)')
+    sign_in_url[0].click()
+    time.sleep(sleep_time)
+    browser_driver.execute_script('document.title = "%s"' % BrowserTitleToFind)
+    time.sleep(sleep_time)
+    app = Application().connect(title_re=BrowserTitleToFind)
+    time.sleep(sleep_time*4)
+    app.top_window().send_keystrokes(username)
+    # app.top_window().send_keystrokes("{TAB 1}")
+    app.top_window().send_keystrokes("{ENTER 1}")
+    browser_driver.execute_script('document.title = "%s"' % BrowserTitleToFind)
+    time.sleep(sleep_time)
+    app = Application().connect(title_re=BrowserTitleToFind)
+    time.sleep(sleep_time*4)
+    app.top_window().send_keystrokes(password)
+    app.top_window().send_keystrokes("{ENTER 1}")
+    time.sleep(sleep_time)
+    time.sleep(120)
+    
+
+# chat_openai()
 
 def open_chatgpt():
     global URL
