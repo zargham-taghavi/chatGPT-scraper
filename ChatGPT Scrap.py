@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from openpyxl import Workbook
 from openpyxl import load_workbook
+import win32gui
 
 if getattr(sys, 'frozen', False):
     root_path = Path(sys.executable).parent
@@ -21,15 +22,21 @@ request_time_out_seconds = 20
 selenium_connect_method = 2
 your_liara_env_token = 'irOrJBbi64iv5hRAwwM'
 liara_chrome_app_url = 'https://zargham.iran.liara.run/webdriver'
-api_key = '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'
+# api_key = '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'
+api_key = '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'
 debug = True
 chromedriver_path = ''
-URL = "https://fastgpt.app//"
-
 # chromedriver_path = "C:/Users/zargham/.cache/selenium/chromedriver/win32/109.0.5414.74/chromedriver.exe"
-
-global BrowserTitleToFind
+URL = "https://fastgpt.app//"
 BrowserTitleToFind = 'Zargham09355124619'
+
+def enumWindowFunc(hwnd, windowList):
+    global BrowserTitleToFind
+    """ win32gui.EnumWindows() callback """
+    text = win32gui.GetWindowText(hwnd)
+    #className = win32gui.GetClassName(hwnd)
+    if text.find(BrowserTitleToFind) != -1 :
+        windowList.append(hwnd)
 
 
 OutPut_Filename = root_path/'results.xlsx'
@@ -76,16 +83,15 @@ def setup_api(browser_driver,api_key, app):
 
 def open_chatgpt():
     global URL, sheet
+    URL = 'https://fastgpt.app/'
     sheet.cell(1, 2).value = 'answer'
     my_chrome_options = webdriver.ChromeOptions()
     my_chrome_options.add_argument('--ignore-certificate-errors')
     my_chrome_options.add_argument('--ignore-ssl-errors')
     my_chrome_options.add_argument('--start-maximized')
-    # my_chrome_options.add_argument('--ignore-certificate-errors')
     my_chrome_options.add_argument('--ignore-certificate-errors-spki-list')
-    if BrowserHide:
-        my_chrome_options.add_argument('--headless')
-    URL = 'https://fastgpt.app/'
+    # if BrowserHide:
+    #     my_chrome_options.add_argument('--headless')
     try:
         if selenium_connect_method == 1:
             if chromedriver_path != None:
@@ -117,18 +123,29 @@ def open_chatgpt():
             print('-- setting up api_key --')
             setup_api(browser_driver,api_key, app)
 
+        if BrowserHide:
+            print('=== hide browser')
+            myWindows = []
+            win32gui.EnumWindows(enumWindowFunc, myWindows)
+            for hwnd in myWindows:
+                win32gui.ShowWindow(hwnd, False)
+
         your_question = ''
-        while your_question != 'stop':
+        while your_question.lower() != 'stop':
             numrows = sheet.max_row
             your_question = input('ask some question from chat-GPT: ')
             if your_question == 'stop':
                 break
 
             # method 1
-            app.top_window().send_keystrokes(your_question)
+            # your_question = your_question.encode('UTF-8')
+            # print('-- UTF-8: ',your_question)
+            # app.top_window().send_keystrokes(your_question)
+            app.top_window().type_keys(your_question,with_spaces=True)
             time.sleep(sleep_time)
             app.top_window().send_keystrokes("{ENTER 1}")
             time.sleep(sleep_time)
+            browser_driver.minimize_window()
 
             # method 2
             # text_area = browser_driver.find_element(By.CSS_SELECTOR, 'textarea')
