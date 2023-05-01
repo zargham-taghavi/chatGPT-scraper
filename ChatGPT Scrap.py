@@ -6,109 +6,86 @@ from selenium.webdriver.common.by import By
 from pywinauto.application import Application
 import sys
 from pathlib import Path
-import warnings
-import json
 from openpyxl import Workbook
-
-Q_and_A = list()
+from openpyxl import load_workbook
 
 if getattr(sys, 'frozen', False):
     root_path = Path(sys.executable).parent
 elif __file__:
     root_path = Path(__file__).parent
 
-warnings.filterwarnings('ignore')
-with open(root_path/'Config.json',encoding='utf-8') as json_file:
-    Config=json.load(json_file)
 
-
-username = Config["chat_gpt_user"]
-password = Config["chat_gpt_pass"]
-search_word = Config["search_keywords"]
-BrowserHide = Config["browser_hide"]
-sleep_time = Config["sleep_time"]
-request_time_out_seconds = Config["time_out"]
+BrowserHide = False
+sleep_time = 1
+request_time_out_seconds = 20
 selenium_connect_method = 2
 your_liara_env_token = 'irOrJBbi64iv5hRAwwM'
 liara_chrome_app_url = 'https://zargham.iran.liara.run/webdriver'
+api_key = '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'
+debug = True
 chromedriver_path = ''
+URL = "https://fastgpt.app//"
+
 # chromedriver_path = "C:/Users/zargham/.cache/selenium/chromedriver/win32/109.0.5414.74/chromedriver.exe"
 
-
-if selenium_connect_method == 3:
-    BrowserHide = True
-# def save_to_excel():
-#     path = root_path/("restaurants in "+our_query+".xlsx")
-#     with pd.ExcelWriter(path, engine="openpyxl") as writer:
-#         # useful code
-#         df = pd.DataFrame(restaurant_list)
-#         # print(df)
-#         df.to_excel(writer, sheet_name='Sheet', index=False)
-
-email = 'z.taghawi@gmail.com'
 global BrowserTitleToFind
 BrowserTitleToFind = 'Zargham09355124619'
 
-URL = ""
 
 OutPut_Filename = root_path/'results.xlsx'
-workbook = Workbook()
+if OutPut_Filename.exists():
+    workbook = load_workbook(filename=OutPut_Filename)
+else:
+    workbook = Workbook()
+
 sheet = workbook.active
+sheet.cell(1, 1).value = 'question'
+# sheet.cell(1, 2).value = 'answer'
+sheet.column_dimensions['A'].width = 25
+sheet.column_dimensions['B'].width = 35
 
-sheet.cell(1,1).value='question'
-sheet.cell(1,2).value='answer'
-sheet.column_dimensions['A'].width=25
-sheet.column_dimensions['B'].width=35
-
-workbook.save(OutPut_Filename)
-
-def chat_openai():
-    global URL
-    URL = "https://chat.openai.com/"
-    my_chrome_options = webdriver.ChromeOptions()
-    my_chrome_options.add_argument('--ignore-certificate-errors')
-    my_chrome_options.add_argument('--ignore-ssl-errors')
-    my_chrome_options.add_argument('--start-maximized')
-    if BrowserHide:
-        my_chrome_options.add_argument('--headless')
-
-    # chromedriver_path = "C:/Users/zargham/.cache/selenium/chromedriver/win32/109.0.5414.74/chromedriver.exe"
-    browser_driver = webdriver.Chrome(options=my_chrome_options)
-
-    browser_driver.get(URL)
-    time.sleep(20)
-    sign_in_url = browser_driver.find_elements(
-        By.CSS_SELECTOR, 'button.btn.relative.btn-primary:nth-child(1)')
-    sign_in_url[0].click()
+def setup_api(browser_driver,api_key, app):
+    api_button = browser_driver.find_element(By.CSS_SELECTOR, 'nav a:nth-child(4)')
+    api_button.click()
     time.sleep(sleep_time)
-    browser_driver.execute_script('document.title = "%s"' % BrowserTitleToFind)
+
+    app.top_window().send_keystrokes("{TAB 3}")
     time.sleep(sleep_time)
-    app = Application().connect(title_re=BrowserTitleToFind)
-    time.sleep(sleep_time*4)
-    app.top_window().send_keystrokes(username)
-    # app.top_window().send_keystrokes("{TAB 1}")
-    app.top_window().send_keystrokes("{ENTER 1}")
-    browser_driver.execute_script('document.title = "%s"' % BrowserTitleToFind)
+    app.top_window().send_keystrokes(api_key)
     time.sleep(sleep_time)
-    app = Application().connect(title_re=BrowserTitleToFind)
-    time.sleep(sleep_time*4)
-    app.top_window().send_keystrokes(password)
+    app.top_window().send_keystrokes("{TAB 3}")
+    time.sleep(sleep_time)
     app.top_window().send_keystrokes("{ENTER 1}")
     time.sleep(sleep_time)
-    time.sleep(120)
+    app.top_window().send_keystrokes("{TAB 10}")
+    time.sleep(sleep_time)
+
+    # # api_form = WebDriverWait(browser_driver, request_time_out_seconds).until(EC.visibility_of_element_located(
+    # #     (By.CSS_SELECTOR, '.prose')))
+    # api_form = browser_driver.find_element(By.CSS_SELECTOR, '.prose')
+    # print('---- api_form.text: ', api_form.text)
+    # api_input = WebDriverWait(browser_driver, request_time_out_seconds).until(EC.visibility_of_element_located(
+    #     (By.TAG_NAME, 'input')))
+    # api_input.send_keystrokes(api_key)
+    # time.sleep(sleep_time)
+    # time.sleep(20)
+    # api_save_button = browser_driver.find_elements(By.CSS_SELECTOR, '.btn-primary div')
+    # api_save_button.click()
+    # time.sleep(sleep_time)
     
 
-# chat_openai()
-
 def open_chatgpt():
-    global URL
+    global URL, sheet
+    sheet.cell(1, 2).value = 'answer'
     my_chrome_options = webdriver.ChromeOptions()
     my_chrome_options.add_argument('--ignore-certificate-errors')
     my_chrome_options.add_argument('--ignore-ssl-errors')
     my_chrome_options.add_argument('--start-maximized')
+    # my_chrome_options.add_argument('--ignore-certificate-errors')
+    my_chrome_options.add_argument('--ignore-certificate-errors-spki-list')
     if BrowserHide:
         my_chrome_options.add_argument('--headless')
-    URL = 'https://poe.com/ChatGPT'
+    URL = 'https://fastgpt.app/'
     try:
         if selenium_connect_method == 1:
             if chromedriver_path != None:
@@ -124,79 +101,68 @@ def open_chatgpt():
         elif selenium_connect_method == 3:
             browser_driver = webdriver.Remote(
                 command_executor=liara_chrome_app_url, options=my_chrome_options)
-            # capabilities = my_chrome_options.to_capabilities()
-            # browser_driver = webdriver.Remote(command_executor=liara_chrome_app_url, desired_capabilities=capabilities)
         browser_driver.get(URL)
         time.sleep(sleep_time)
     except Exception as error:
         print('---------- Exception html_format : --------\n', error)
     else:  # if try part was successful
-        login_url = WebDriverWait(browser_driver, request_time_out_seconds).until(EC.visibility_of_element_located(
-            (By.CSS_SELECTOR, 'a.LoggedOutBotInfoPage_appButton__UO6NU')))
-        login_url.click()
+        browser_driver.execute_script(
+            'document.title = "%s"' % BrowserTitleToFind)
         time.sleep(sleep_time)
-        email_sign_in = WebDriverWait(browser_driver, request_time_out_seconds).until(EC.visibility_of_element_located(
-            (By.CSS_SELECTOR, '.Button_flat__1hj0f.undefined')))
-        email_sign_in.click()
-        time.sleep(sleep_time)
-        browser_driver.execute_script('document.title = "%s"' % BrowserTitleToFind)
-        time.sleep(sleep_time)
+
         app = Application().connect(title_re=BrowserTitleToFind)
-        # time.sleep(sleep_time)
-        app.top_window().send_keystrokes(email)
-        time.sleep(sleep_time)
-        app.top_window().send_keystrokes("{ENTER 1}")
         time.sleep(sleep_time)
 
-        # send code to verify email
-        # browser_driver.execute_script('document.title = "%s"' % BrowserTitleToFind)
-        # time.sleep(sleep_time)
-        # app = Application().connect(title_re=BrowserTitleToFind)
-        # time.sleep(sleep_time)
-        # app.top_window().send_keystrokes('code')
-        # time.sleep(sleep_time)
-        # app.top_window().send_keystrokes("{ENTER 1}")
+        if api_key != '':
+            print('-- setting up api_key --')
+            setup_api(browser_driver,api_key, app)
 
-        # log_in = WebDriverWait(browser_driver, request_time_out_seconds).until(EC.visibility_of_element_located(
-        #     (By.CSS_SELECTOR, 'button.Button_buttonBase__0QP_m.Button_primary__pIDjn')))
-        # log_in.click()
-        # time.sleep(sleep_time)
+        your_question = ''
+        while your_question != 'stop':
+            numrows = sheet.max_row
+            your_question = input('ask some question from chat-GPT: ')
+            if your_question == 'stop':
+                break
+
+            # method 1
+            app.top_window().send_keystrokes(your_question)
+            time.sleep(sleep_time)
+            app.top_window().send_keystrokes("{ENTER 1}")
+            time.sleep(sleep_time)
+
+            # method 2
+            # text_area = browser_driver.find_element(By.CSS_SELECTOR, 'textarea')
+            # time.sleep(sleep_time)
+            # your_question = input('ask some question from chat-GPT: ')
+            # text_area.__setattr__('value',your_question)
+            # time.sleep(sleep_time)
+            # send_button = browser_driver.find_element(By.CSS_SELECTOR, 'button.absolute')
+            # send_button.click()
+            # time.sleep(sleep_time)
+
+            WebDriverWait(browser_driver, request_time_out_seconds).until(EC.visibility_of_all_elements_located(
+                (By.CSS_SELECTOR, '.items-start.gap-4')))
+            elements = browser_driver.find_elements(By.CSS_SELECTOR, '.items-start.gap-4')
+            print(elements[-1].text)
+
+        elements = browser_driver.find_elements(By.CSS_SELECTOR, '.items-start.gap-4')
+        time.sleep(sleep_time)
+        numrows = 0
+        for element_index in range(len(elements)):
+            if element_index % 2 == 0:
+                numrows = sheet.max_row
+                # print('-numrows:', numrows)
+                sheet.cell(numrows+1, 1).value = elements[element_index].text
+            else:
+                sheet.cell(numrows+1, 2).value = elements[element_index].text
+            print('=== element number %i, numrow is: %i, text is: %s' %
+                  (element_index+1, numrows, elements[element_index].text))
+        try:
+            workbook.save(OutPut_Filename)
+        except Exception as error:
+            if debug:
+                print('-- error on save to excel. error message is:\n',error)
+        # browser_driver.quit()
 
 
-        WebDriverWait(browser_driver, request_time_out_seconds*6).until(EC.visibility_of_all_elements_located(
-            (By.CSS_SELECTOR, 'footer.ChatPageMainFooter_footer__Hm4Rt')))
-        
-        browser_driver.execute_script('document.title = "%s"' % BrowserTitleToFind)
-        time.sleep(sleep_time)
-        app = Application().connect(title_re=BrowserTitleToFind)
-        # time.sleep(sleep_time)
-        your_question = input('ask some question from chat-GPT: ')
-        app.top_window().send_keystrokes(your_question)
-        time.sleep(sleep_time)
-        # app.top_window().send_keystrokes("{TAB 1}")
-        app.top_window().send_keystrokes("{ENTER 1}")
-        time.sleep(sleep_time)
-        WebDriverWait(browser_driver, request_time_out_seconds).until(EC.visibility_of_element_located(
-            (By.CSS_SELECTOR, '.ChatMessagesView_infiniteScroll__K_SeP')))
-        parent_element = browser_driver.find_element(By.CSS_SELECTOR,'.ChatMessagesView_infiniteScroll__K_SeP')
-        print('-- parent_elemtns.text: ',parent_element.text)
-        elements = parent_element.find_elements(By.CSS_SELECTOR,'.Markdown_markdownContainer__UyYrv')
-        print('-- len elements: ',len(elements))
-        time.sleep(sleep_time)
-        # element_number = 0
-        # for element in elements:
-        #     element_number += 1
-        #     # print(element.text)
-        #     paragraphs = element.find_elements(By.CSS_SELECTOR,'p')
-        #     # print('-- len paragraph:',len(paragraphs))
-        #     paragraph_number = 0
-        #     for paragraph in paragraphs:
-        #         paragraph_number += 1
-        #         print('=== element number %i, paragraph %i, text is: %s'%(element_number,paragraph_number, paragraph.text))
-        #     # if element % 2 == 0:
-        #     #     Q_and_A[element/2].append([element.text])
-        #     # else:
-        #     #     Q_and_A.append(list(element.text))
-        print('-- last answare: ',elements[-1].text)
-        time.sleep(60)
 open_chatgpt()
